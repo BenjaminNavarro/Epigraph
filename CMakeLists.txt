@@ -3,8 +3,14 @@ project(epigraph)
 
 set(CMAKE_CXX_STANDARD 17)
 
+include(GNUInstallDirs)
+
 add_library(epigraph SHARED)
-target_include_directories(epigraph PUBLIC include)
+target_include_directories(epigraph  PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    "$<INSTALL_INTERFACE:$<INSTALL_PREFIX>/${CMAKE_INSTALL_INCLUDEDIR}/epigraph>"
+)
+
 target_sources(epigraph PRIVATE
     src/parameter.cpp
     src/variable.cpp
@@ -130,3 +136,40 @@ endif()
 
 target_compile_options(epigraph PUBLIC "$<$<CONFIG:DEBUG>:${DEBUG_OPTIONS}>")
 target_compile_options(epigraph PUBLIC "$<$<CONFIG:RELEASE>:${RELEASE_OPTIONS}>")
+
+# Installation
+
+install(TARGETS epigraph
+        EXPORT  ${PROJECT_NAME}
+        ARCHIVE       DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        LIBRARY       DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        RUNTIME       DESTINATION "${CMAKE_INSTALL_BINDIR}"
+)
+
+install(
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/epigraph"
+)
+
+# Create CMake packages for the build directory
+include(CMakePackageConfigHelpers)
+
+export(EXPORT ${PROJECT_NAME}
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/epigraph-targets.cmake"
+  NAMESPACE epigraph::
+)
+
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/epigraph-config.cmake "include(\"\${CMAKE_CURRENT_LIST_DIR}/epigraph-targets.cmake\")\n")
+
+# Create CMake packages for the install directory
+set(ConfigPackageLocation ${CMAKE_INSTALL_LIBDIR}/cmake/epigraph)
+
+install(EXPORT ${PROJECT_NAME}
+        FILE epigraph-targets.cmake
+        NAMESPACE epigraph::
+        DESTINATION ${ConfigPackageLocation}
+)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/epigraph-config.cmake
+        DESTINATION ${ConfigPackageLocation}
+)
